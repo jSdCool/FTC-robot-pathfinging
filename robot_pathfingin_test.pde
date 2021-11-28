@@ -6,7 +6,7 @@ void setup(){
 
 PImage field;
 float fieldX0=442,fieldY0=930,fieldXmax=1359,fieldYmax=11,segmentDist=1,hubexclousionRadious=11;
-ArrayList<Point> path = new ArrayList<>();
+ArrayList<Point> path = new ArrayList<Point>(),path2;
 boolean validPath=false,point1=false,point2=false;
 Point start,end;
 
@@ -35,6 +35,11 @@ void draw(){
   if(validPath){
    for(int i=0;i<path.size()-1;i++){
     line(fieldToScreenX((float)path.get(i).x),fieldToScreenY((float)path.get(i).y),fieldToScreenX((float)path.get(i+1).x),fieldToScreenY((float)path.get(i+1).y));
+   }
+   
+   stroke(#362BB9);
+   for(int i=0;i<path2.size()-1;i++){
+    line(fieldToScreenX((float)path2.get(i).x),fieldToScreenY((float)path2.get(i).y),fieldToScreenX((float)path2.get(i+1).x),fieldToScreenY((float)path2.get(i+1).y));
    }
   }
   
@@ -101,7 +106,11 @@ void mouseClicked(){
       end=new Point(screenToFieldX(mouseX),screenToFieldY(mouseY),"");
       
       path = createPath(start,end);
-      
+      path2=optimisePath1(path);
+      println();
+      for(int i=0;i<path2.size();i++){
+       println("point "+i+" "+path2.get(i).x+" "+path2.get(i).x);
+      }
       validPath=true;
     }
   }
@@ -143,7 +152,7 @@ boolean insideBarrierVR(Point p){
 }
 
 ArrayList<Point> createPath(Point start,Point end){
- ArrayList<Point> p=new ArrayList<>();
+ ArrayList<Point> p=new ArrayList<Point>();
        p.add(start);
       boolean working=true;
       int itteration=0;
@@ -262,4 +271,29 @@ void mouseWheel(MouseEvent event) {
   segmentDist+=wheel_direction;
   }
   
+  
+}
+
+/**the first step in optimising a path, this function reduces the numbers of point in a path by detecting straight lines and removing the points that make them up
+@param p the path that you want to optimise
+@return a path that contains less points
+*/
+ArrayList<Point> optimisePath1(ArrayList<Point> p){
+  ArrayList<Point> o=new ArrayList<Point>();//the object to return
+  o.add(p.get(0));//add the first point of the path to the new path
+  int beginindex=0;
+  double devation=0.01;//how far(in radians) is a line allowed to lean in either direction bfore it is consited a new line
+  double angle=Math.atan2(p.get(1).y-p.get(0).y,p.get(1).x-p.get(0).x);//calcuate the inital angle that the line is going in
+  for(int i=1;i<p.size();i++){
+    double newAngle=Math.atan2(p.get(i).y-p.get(beginindex).y,p.get(i).x-p.get(beginindex).x);//calculate the angle between the base point of the current line and the next point in the list
+    if(newAngle>=angle-devation&&newAngle<=angle+devation){//if the angle is inside the acceptable range
+      continue;
+    }else{
+      o.add(p.get(i-1));//add the prevous point to the optimsed path
+      beginindex=i;//set the current point as the new base point
+       angle=Math.atan2(p.get(i).y-p.get(i-1).y,p.get(i).x-p.get(i-1).x);//calculate the new angle of the next    line 
+    }
+  }
+  o.add(p.get(p.size()-1));//add the  final point to the new path
+  return o;
 }
